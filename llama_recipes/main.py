@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 
-import logging
+import logging as std_logging
 import os
 import time
 
@@ -21,9 +21,9 @@ from api import (
 
 app = FastAPI()
 
-logger = logging.getLogger(__name__)
-# Configure the logging module
-logging.basicConfig(level=logging.INFO)
+logger = std_logging.getLogger(__name__)
+# Configure the std_logging module
+std_logging.basicConfig(level=std_logging.INFO)
 
 login(token=os.environ["HUGGINGFACE_TOKEN"])
 
@@ -39,21 +39,21 @@ model.eval()
 
 tokenizer = LlamaTokenizer.from_pretrained('meta-llama/Llama-2-7b')
 
-LLAMA2_CONTEXT_LENGTH = 4096
+CONTEXT_LENGTH = 4096
 
 
 @app.post("/process")
 async def process_request(input_data: ProcessRequest) -> ProcessResponse:
     if input_data.seed is not None:
         torch.manual_seed(input_data.seed)
-    
+
     encoded = tokenizer(input_data.prompt, return_tensors="pt")
-    
+
     prompt_length = encoded["input_ids"][0].size(0)
     max_returned_tokens = prompt_length + input_data.max_new_tokens
-    assert max_returned_tokens <= LLAMA2_CONTEXT_LENGTH, (
+    assert max_returned_tokens <= CONTEXT_LENGTH, (
         max_returned_tokens,
-        LLAMA2_CONTEXT_LENGTH,
+        CONTEXT_LENGTH,
     )
 
     t0 = time.perf_counter()
@@ -82,7 +82,7 @@ async def process_request(input_data: ProcessRequest) -> ProcessResponse:
 
     logger.info(f"Memory used: {torch.cuda.max_memory_reserved() / 1e9:.02f} GB")
     generated_tokens = []
-    
+
     log_probs = torch.log(torch.stack(outputs.scores, dim=1).softmax(-1))
 
     gen_sequences = outputs.sequences[:, encoded["input_ids"].shape[-1]:]
@@ -101,7 +101,7 @@ async def process_request(input_data: ProcessRequest) -> ProcessResponse:
             Token(text=tokenizer.decode(t), logprob=lp, top_logprob=token_tlp)
         )
     logprob_sum = gen_logprobs.sum().item()
-    
+
     return ProcessResponse(
         text=output, tokens=generated_tokens, logprob=logprob_sum, request_time=t
     )
