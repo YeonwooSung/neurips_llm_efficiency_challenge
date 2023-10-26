@@ -1,10 +1,8 @@
 import os
-import sys
 
-sys.path.append('..')
-
-from huggingface_hub import login, HfApi 
+from huggingface_hub import login, HfApi
 from llama_recipes.finetuning import main as finetuning
+
 
 def main():
     login(token=os.environ["HUGGINGFACE_TOKEN"])
@@ -22,13 +20,14 @@ def main():
     
     finetuning(**kwargs)
 
-    api = HfApi() 
+    api = HfApi()
 
-    api.upload_folder( 
-        folder_path='./output_dir/', 
-        repo_id=os.environ["HUGGINGFACE_REPO"], 
-        repo_type='model', 
+    api.upload_folder(
+        folder_path='./output_dir/',
+        repo_id=os.environ["HUGGINGFACE_REPO"],
+        repo_type='model'
     )
+
 
 if __name__ == "__main__":
     main()

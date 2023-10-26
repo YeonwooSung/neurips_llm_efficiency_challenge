@@ -1,4 +1,4 @@
-FROM ghcr.io/pytorch/pytorch-nightly:b3874ab-cu11.8.0
+FROM pytorch/pytorch:2.1.0-cuda12.1-cudnn8-devel
 
 RUN apt-get update  && apt-get install -y git python3-virtualenv wget
 
@@ -9,7 +9,7 @@ WORKDIR /workspace
 RUN wget https://gist.githubusercontent.com/mreso/ec65015cbfbd395f0c2adc17147adf1f/raw/41070f1058820b9e89bae885968cc666a7d6aa59/custom_dataset.py
 
 ENV HUGGINGFACE_TOKEN="YOUR_TOKEN"
-ENV HUGGINGFACE_REPO="mistralai/Mistral-7B-v0.1"
+ENV HUGGINGFACE_REPO="YOUR_USERNAME/YOUR_REPO"
 
 COPY train.py ./
 

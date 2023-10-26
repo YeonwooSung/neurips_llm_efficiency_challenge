@@ -1,4 +1,4 @@
-FROM ghcr.io/pytorch/pytorch-nightly:b3874ab-cu11.8.0
+FROM pytorch/pytorch:2.1.0-cuda12.1-cudnn8-devel
 
 RUN apt-get update  && apt-get install -y git python3-virtualenv wget 
 
@@ -9,11 +9,12 @@ WORKDIR /workspace
 COPY ./fast_api_requirements.txt fast_api_requirements.txt
 RUN pip install --no-cache-dir --upgrade -r fast_api_requirements.txt
 
-ENV HUGGINGFACE_TOKEN="YOUR_TOKEN"
-ENV HUGGINGFACE_REPO="YOUR_USERNAME/YOUR_REPO"
+ENV HUGGINGFACE_TOKEN="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"
+ENV HUGGINGFACE_REPO="Technonia/mistral-7b-cot"
 
 # Copy over single file server
 COPY ./main.py main.py
 COPY ./api.py api.py
+
 # Run the server
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "80"]

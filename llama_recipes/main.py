@@ -1,12 +1,12 @@
 from fastapi import FastAPI
 
-import logging as std_logging
+import logging
 import os
 import time
 
 import torch
 from huggingface_hub import login
-from transformers import LlamaTokenizer, LlamaForCausalLM
+from transformers import LlamaTokenizer, LlamaForCausalLM, AutoTokenizer, AutoModelForCausalLM
 from llama_recipes.inference.model_utils import load_peft_model
 
 torch.set_float32_matmul_precision("high")
@@ -21,39 +21,58 @@ from api import (
 
 app = FastAPI()
 
-logger = std_logging.getLogger(__name__)
-# Configure the std_logging module
-std_logging.basicConfig(level=std_logging.INFO)
+logger = logging.getLogger(__name__)
+# Configure the logging module
+logging.basicConfig(level=logging.INFO)
 
 login(token=os.environ["HUGGINGFACE_TOKEN"])
 
-model = LlamaForCausalLM.from_pretrained(
-    'meta-llama/Llama-2-7b-hf',
+# model_name = 'meta-llama/Llama-2-7b-hf'
+# model_name = "NousResearch/Llama-2-7b-hf"
+model_name = 'mistralai/Mistral-7B-v0.1'
+# model_name = 'mistralai/Mistral-7B-Instruct-v0.1'
+
+model = AutoModelForCausalLM.from_pretrained(
+    model_name,
     return_dict=True,
     torch_dtype=torch.float16,
     device_map="cuda"
-)
+    )
 model = load_peft_model(model, os.environ["HUGGINGFACE_REPO"])
 
 model.eval()
 
-tokenizer = LlamaTokenizer.from_pretrained('meta-llama/Llama-2-7b')
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+tokenizer.pad_token = tokenizer.eos_token
 
-CONTEXT_LENGTH = 4096
+LLAMA2_CONTEXT_LENGTH = 2048
+
+
+def create_prompt_from_query(query: str) -> str:
+    prompt_template = """
+    Below is an instruction that describes a task. Write a response that appropriately completes the request.
+    ### Instruction:
+    {query}
+
+    ### Response:
+    """
+    prompt = prompt_template.format(query=query)
+    return prompt
 
 
 @app.post("/process")
 async def process_request(input_data: ProcessRequest) -> ProcessResponse:
     if input_data.seed is not None:
         torch.manual_seed(input_data.seed)
-
+    # input_prompt = create_prompt_from_query(input_data.query)
+    # encoded = tokenizer(input_prompt, return_tensors="pt")
     encoded = tokenizer(input_data.prompt, return_tensors="pt")
 
     prompt_length = encoded["input_ids"][0].size(0)
     max_returned_tokens = prompt_length + input_data.max_new_tokens
-    assert max_returned_tokens <= CONTEXT_LENGTH, (
+    assert max_returned_tokens <= LLAMA2_CONTEXT_LENGTH, (
         max_returned_tokens,
-        CONTEXT_LENGTH,
+        LLAMA2_CONTEXT_LENGTH,
     )
 
     t0 = time.perf_counter()
@@ -67,14 +86,17 @@ async def process_request(input_data: ProcessRequest) -> ProcessResponse:
             top_k=input_data.top_k,
             return_dict_in_generate=True,
             output_scores=True,
+            pad_token_id=tokenizer.eos_token_id,
+            repetition_penalty=1.0,
+            dola_decoding=True,
         )
-    
+
     t = time.perf_counter() - t0
     if not input_data.echo_prompt:
         output = tokenizer.decode(outputs.sequences[0][prompt_length:], skip_special_tokens=True)
     else:
         output = tokenizer.decode(outputs.sequences[0], skip_special_tokens=True)
-        
+
     tokens_generated = outputs.sequences[0].size(0) - prompt_length
     logger.info(
         f"Time for inference: {t:.02f} sec total, {tokens_generated / t:.02f} tokens/sec"
