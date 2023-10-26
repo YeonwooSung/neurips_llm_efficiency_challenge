@@ -45,7 +45,7 @@ model.eval()
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 tokenizer.pad_token = tokenizer.eos_token
 
-LLAMA2_CONTEXT_LENGTH = 2048
+LLAMA2_CONTEXT_LENGTH = 4096
 
 
 def create_prompt_from_query(query: str) -> str:
