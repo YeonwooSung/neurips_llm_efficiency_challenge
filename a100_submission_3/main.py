@@ -87,7 +87,6 @@ async def process_request(input_data: ProcessRequest) -> ProcessResponse:
             output_scores=True,
             pad_token_id=tokenizer.eos_token_id,
             repetition_penalty=1.0,
-            dola_decoding=True,
         )
 
     t = time.perf_counter() - t0
