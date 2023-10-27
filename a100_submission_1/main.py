@@ -46,14 +46,12 @@ LLAMA2_CONTEXT_LENGTH = 4096
 
 
 def create_prompt_from_query(query: str) -> str:
-    prompt_template = """
-    Below is an instruction that describes a task. Write a response that appropriately completes the request.
-    ### Instruction:
-    {query}
+    prompt_template = """### Instruction:
+{query}
 
-    ### Response:
-    """
-    prompt = prompt_template.format(query=query)
+### Response:
+"""
+    prompt = prompt_template.format(query=query.strip())
     return prompt
 
 
@@ -89,7 +87,6 @@ async def process_request(input_data: ProcessRequest) -> ProcessResponse:
             output_scores=True,
             pad_token_id=tokenizer.eos_token_id,
             repetition_penalty=1.0,
-            dola_decoding=True,
         )
 
     t = time.perf_counter() - t0
@@ -102,6 +99,13 @@ async def process_request(input_data: ProcessRequest) -> ProcessResponse:
     logger.info(
         f"Time for inference: {t:.02f} sec total, {tokens_generated / t:.02f} tokens/sec"
     )
+
+    if not input_data.echo_prompt:
+        output = output.strip().split('\n\n')[0].strip()
+    else:
+        output_without_input = output.replace(input_prompt, '').strip()
+        output_without_input = output_without_input.split('\n\n')[0].strip()
+        output = f"{input_data.query}\n{output_without_input}"
 
     logger.info(f"Memory used: {torch.cuda.max_memory_reserved() / 1e9:.02f} GB")
     generated_tokens = []
