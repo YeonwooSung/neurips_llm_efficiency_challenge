@@ -27,10 +27,7 @@ logging.basicConfig(level=logging.INFO)
 
 login(token=os.environ["HUGGINGFACE_TOKEN"])
 
-# model_name = 'meta-llama/Llama-2-7b-hf'
-# model_name = "NousResearch/Llama-2-7b-hf"
-model_name = 'mistralai/Mistral-7B-v0.1'
-# model_name = 'mistralai/Mistral-7B-Instruct-v0.1'
+model_name = 'mistralai/Mistral-7B-Instruct-v0.1'
 
 model = AutoModelForCausalLM.from_pretrained(
     model_name,
