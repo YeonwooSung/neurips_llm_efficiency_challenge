@@ -42,13 +42,14 @@ model.eval()
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 # tokenizer.pad_token = tokenizer.eos_token
 
-LLAMA2_CONTEXT_LENGTH = 2048
+LLAMA2_CONTEXT_LENGTH = 4096
 
 
 def create_prompt_from_query(query: str) -> str:
-    prompt_template = """
-    Below is an instruction that describes a task. Write a response that appropriately completes the request.
-    ### Instruction:
+    prompt_template = """### Instruction:
+
+    Please only answer to the last question.
+
     {query}
 
     ### Response:
