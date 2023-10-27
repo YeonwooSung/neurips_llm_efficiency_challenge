@@ -27,10 +27,7 @@ logging.basicConfig(level=logging.INFO)
 
 login(token=os.environ["HUGGINGFACE_TOKEN"])
 
-# model_name = 'meta-llama/Llama-2-7b-hf'
-# model_name = "NousResearch/Llama-2-7b-hf"
 model_name = 'mistralai/Mistral-7B-v0.1'
-# model_name = 'mistralai/Mistral-7B-Instruct-v0.1'
 
 model = AutoModelForCausalLM.from_pretrained(
     model_name,
@@ -43,7 +40,7 @@ model = load_peft_model(model, os.environ["HUGGINGFACE_REPO"])
 model.eval()
 
 tokenizer = AutoTokenizer.from_pretrained(model_name)
-tokenizer.pad_token = tokenizer.eos_token
+# tokenizer.pad_token = tokenizer.eos_token
 
 LLAMA2_CONTEXT_LENGTH = 4096
 
@@ -64,16 +61,20 @@ def create_prompt_from_query(query: str) -> str:
 async def process_request(input_data: ProcessRequest) -> ProcessResponse:
     if input_data.seed is not None:
         torch.manual_seed(input_data.seed)
-    # input_prompt = create_prompt_from_query(input_data.query)
-    # encoded = tokenizer(input_prompt, return_tensors="pt")
-    encoded = tokenizer(input_data.prompt, return_tensors="pt")
 
-    prompt_length = encoded["input_ids"][0].size(0)
+    input_prompt = create_prompt_from_query(input_data.query)
+    encoded = tokenizer(input_prompt, return_tensors="pt")
+
+    _encoded = tokenizer(input_data.prompt, return_tensors="pt")
+
+    prompt_length = _encoded["input_ids"][0].size(0)
     max_returned_tokens = prompt_length + input_data.max_new_tokens
     assert max_returned_tokens <= LLAMA2_CONTEXT_LENGTH, (
         max_returned_tokens,
         LLAMA2_CONTEXT_LENGTH,
     )
+
+    prompt_length = encoded["input_ids"][0].size(0)
 
     t0 = time.perf_counter()
     encoded = {k: v.to("cuda") for k, v in encoded.items()}
