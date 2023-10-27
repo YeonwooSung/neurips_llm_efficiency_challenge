@@ -10,7 +10,7 @@ COPY ./fast_api_requirements.txt fast_api_requirements.txt
 RUN pip install --no-cache-dir --upgrade -r fast_api_requirements.txt
 
 ENV HUGGINGFACE_TOKEN="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"
-ENV HUGGINGFACE_REPO="Technonia/mistral-7b-cot"
+ENV HUGGINGFACE_REPO="Technonia/mistral-7b-cot-neftune"
 
 # Copy over single file server
 COPY ./main.py main.py
